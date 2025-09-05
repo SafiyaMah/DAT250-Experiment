@@ -1,0 +1,15 @@
+meta {
+  name: votetoptions for poll 1
+  type: http
+  seq: 11
+}
+
+get {
+  url: http://localhost:8080/api/polls/1/options
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

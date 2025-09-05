@@ -1,0 +1,19 @@
+meta {
+  name: createpoll2
+  type: http
+  seq: 7
+}
+
+post {
+  url: http://localhost:8080/api/polls?username=Farax
+  body: none
+  auth: inherit
+}
+
+params:query {
+  username: Farax
+}
+
+settings {
+  encodeUrl: true
+}

@@ -1,0 +1,32 @@
+meta {
+  name: createpoll1
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:8080/api/polls?Xalimo
+  body: json
+  auth: inherit
+}
+
+params:query {
+  Xalimo: 
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "question": "who is best, Farax or Xalimo",
+    "aPublic": true,
+    "validUntil": ""
+  }
+  
+}
+
+settings {
+  encodeUrl: true
+}
