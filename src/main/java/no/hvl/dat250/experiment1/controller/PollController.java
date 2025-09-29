@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/polls")
