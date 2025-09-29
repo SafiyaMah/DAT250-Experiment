@@ -35,9 +35,7 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok")
 }
 
-tasks.test { useJUnitPlatform() 
-}
-
-tasks.withType<Test> {
+tasks.test {
 	useJUnitPlatform()
+	systemProperty "spring.profiles.active", "test"
 }
