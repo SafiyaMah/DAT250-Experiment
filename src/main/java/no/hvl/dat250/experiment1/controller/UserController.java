@@ -2,33 +2,42 @@ package no.hvl.dat250.experiment1.controller;
 
 import no.hvl.dat250.experiment1.domain.User;
 import no.hvl.dat250.experiment1.manager.PollManager;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.web.bind.annotation.*;
 
+import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = {
-        "http://localhost:8080"
-})
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173" })
+@RequiredArgsConstructor
 public class UserController {
-
-    @Autowired
-    private PollManager pollManager;
-
+    private final PollManager pollManager;
+    
     @PostMapping
-    public User createUser(@RequestBody User user) {
-        return pollManager.createUser(user.getUsername(), user.getEmail());
+    public User create(@RequestBody CreateUser req){
+        return pollManager.createUser(req.username(), req.email());
     }
-
+    
     @GetMapping
-    public Map<String, User> getAllUsers() {
-        return pollManager.getUsers();
+    public List<User> all(){
+        return pollManager.listUsers();
     }
 
-    @GetMapping("/{username}") // get one user
-    public User getUser(@PathVariable String username) {
-        return pollManager.getUser(username);
+    @GetMapping("/{id}")
+    public User one(@PathVariable Long id){
+        return pollManager.getUser(id);
     }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id){
+        pollManager.deleteUser(id);
+    }
+
+    // Request DTO
+    public record CreateUser(String username, String email) {}
 }

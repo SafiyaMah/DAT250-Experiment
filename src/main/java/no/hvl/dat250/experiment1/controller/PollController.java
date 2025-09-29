@@ -3,43 +3,52 @@ package no.hvl.dat250.experiment1.controller;
 import no.hvl.dat250.experiment1.domain.Poll;
 import no.hvl.dat250.experiment1.domain.VoteOption;
 import no.hvl.dat250.experiment1.manager.PollManager;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.web.bind.annotation.*;
 
+import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/polls")
-@CrossOrigin(origins = {
-        "http://localhost:8080"
-})
+@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173" })
+@RequiredArgsConstructor
 public class PollController {
-
-    @Autowired
-    private PollManager pollManager;
+    private final PollManager pollManager;
 
     @PostMapping
-    public Poll createPoll(@RequestParam String username, @RequestBody Poll body) {
-        return pollManager.createPoll(username, body.getQuestion(), body.isaPublic(), body.getValidUntil());
+    public Poll create(@RequestParam Long creatorId, @RequestBody CreatePoll req) {
+        return pollManager.createPoll(creatorId, req.question(), req.validUntil(), req.aPublic(), req.options());
     }
 
     @GetMapping
-    public Map<Long, Poll> getAllPolls() {
-        return pollManager.getPolls();
+    public List<Poll> all() {
+        return pollManager.listPolls();
     }
 
-    @GetMapping("/{pollId}")
-    public Poll getPoll(@PathVariable Long pollId) {
-        return pollManager.getPolls().get(pollId);
+    @GetMapping("/{id}")
+    public Poll one(@PathVariable Long id) {
+        return pollManager.getPoll(id);
     }
 
-    @PostMapping("/{pollId}/options")
-    public VoteOption createVoteOption(@PathVariable Long pollId, @RequestBody VoteOption option) {
-        return pollManager.createVoteOption(pollId, option.getCaption(), option.getPresentationOrder());
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        pollManager.deletePoll(id);
     }
 
-    @DeleteMapping("/{pollId}")
-    public void deletePoll(@PathVariable Long pollId) {
-        pollManager.deletePoll(pollId);
+    @PostMapping("/{id}/options")
+    public VoteOption addOption(@PathVariable Long id, @RequestBody CreateOption req) {
+        return pollManager.addOption(id, req.caption());
     }
+
+    @GetMapping("/{id}/results")
+    public List<PollManager.ResultDto> results(@PathVariable Long id){
+        return pollManager.results(id);
+    }
+
+    public record CreatePoll(String question, LocalDate validUntil, boolean aPublic, List<String> options) {}
+    public record CreateOption(String caption) {}
 }

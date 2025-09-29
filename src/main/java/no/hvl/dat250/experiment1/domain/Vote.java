@@ -3,31 +3,52 @@ package no.hvl.dat250.experiment1.domain;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
 import java.time.Instant;
 
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Vote {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Instant publishedAt;
-    private VoteOption voteOption;
-    private User voter;
+    private Instant publishedAt = Instant.now();
+
+    // Many votes belong to one poll
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "poll_id")
+    @ToString.Exclude
     private Poll poll;
 
-    public Vote() {}
+    // Many votes can be cast by one user
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "voter_id")
+    @ToString.Exclude
+    private User voter;
 
-    // Getters & Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    // Many votes can belong to one option
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "vote_option_id")
+    private VoteOption voteOption;
 
-    public Instant getPublishedAt() { return publishedAt; }
-    public void setPublishedAt(Instant publishedAt) { this.publishedAt = publishedAt; }
-
-    public VoteOption getVoteOption() { return voteOption; }
-    public void setVoteOption(VoteOption voteOption) { this.voteOption = voteOption; }
-
-    public User getVoter() { return voter; }
-    public void setVoter(User voter) { this.voter = voter; }
-
-    public Poll getPoll() { return poll; }
-    public void setPoll(Poll poll) { this.poll = poll; }
+    public Vote(User voter, Poll poll, VoteOption voteOption) {
+        this.voter = voter;
+        this.poll = poll;
+        this.voteOption = voteOption;
+    }
 }
