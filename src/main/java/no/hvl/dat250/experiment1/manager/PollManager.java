@@ -36,6 +36,10 @@ public class PollManager {
         return users.findAll();
     }
 
+    public User getUserByUsername(String username) {
+        return users.findByUsername(username).orElseThrow(() -> notFound("User", username));
+    }
+
     public User getUser(Long id) {
         return users.findById(id).orElseThrow(() -> notFound("User", id));
     }
@@ -48,6 +52,9 @@ public class PollManager {
 
     @Transactional
     public Poll createPoll(Long creatorId, String question, LocalDate validUntil, boolean aPublic, List<String> opts){
+        if (opts == null || opts.size() < 2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provide at least two options");
+        }
         User creator = users.findById(creatorId).orElseThrow(() -> notFound("User", creatorId));
         Poll createNewPoll = new Poll(question, validUntil, creator, aPublic);
         opts.forEach(createNewPoll::addVoteOption);       
@@ -80,10 +87,13 @@ public class PollManager {
     public Vote castVote(Long pollId, Long optionId, Long voterId){
         Poll poll = getPoll(pollId);
         VoteOption option = options.findById(optionId).orElseThrow(() -> notFound("Option", optionId));
+        User voter = users.findById(voterId).orElseThrow(() -> notFound("User", voterId));
         if (!option.getPoll().getId().equals(poll.getId())){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Option does not belong to poll");
         }
-        User voter = users.findById(voterId).orElseThrow(() -> notFound("User", voterId));
+        if (votes.existsByPoll_IdAndVoter_Id(pollId, voterId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "You already voted on this poll");
+        }
         Vote vote = new Vote(voter, poll, option);
         return votes.save(vote);
     }
@@ -105,5 +115,5 @@ public class PollManager {
         return new ResponseStatusException(HttpStatus.NOT_FOUND, what + " " + id + " not found");
     }
 
-    public record ResultDto(Long optionId, String caption, long count) {}
+    public record ResultDto(Long optionId, String caption, long votes) {}
 }

@@ -1,10 +1,10 @@
 package no.hvl.dat250.experiment1.domain;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -21,11 +21,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class VoteOption {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,15 +34,17 @@ public class VoteOption {
     private int presentationOrder;
 
     // Many options belong to one poll
+    @JsonBackReference
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "poll_id")
+    @JoinColumn(name = "poll_id", nullable = false)
     @ToString.Exclude
     private Poll poll;
 
     // One option can have many votes
     @OneToMany(mappedBy = "voteOption", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private Set<Vote> votes = new HashSet<>();
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private List<Vote> votes = new ArrayList<>();
 
     public VoteOption(Poll poll, String caption, int order) {
     this.poll = poll;
@@ -60,4 +62,11 @@ public class VoteOption {
         votes.remove(vote);
         vote.setVoteOption(null);
     }
+
+    @Override public boolean equals(Object o){
+        if (this == o) return true;
+        if (!(o instanceof VoteOption other)) return false;
+        return id != null && id.equals(other.id);
+    }
+    @Override public int hashCode(){ return 31; }
 }

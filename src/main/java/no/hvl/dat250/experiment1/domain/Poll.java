@@ -1,7 +1,8 @@
 package no.hvl.dat250.experiment1.domain;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -12,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import lombok.AccessLevel;
 import lombok.ToString;
 import lombok.Getter;
@@ -20,21 +22,24 @@ import lombok.Setter;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Poll {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String question;
     private Instant publishedAt = Instant.now();
-    private LocalDate validUntil;
+    private LocalDate validUntil; 
+    @JsonProperty("aPublic")
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private boolean aPublic; 
 
     // Many polls share one creator
@@ -44,14 +49,17 @@ public class Poll {
     private User creator;
 
     // One poll can have many vote options
+    @JsonManagedReference
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")  
     @ToString.Exclude
-    private Set<VoteOption> voteOptions = new HashSet<>();
+    private List<VoteOption> voteOptions = new ArrayList<>();
     
     // One poll can have many votes
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private Set<Vote> votes = new HashSet<>();
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private List<Vote> votes = new ArrayList<>();
 
     public Poll(String question, LocalDate validUntil, User creator, boolean aPublic) {
         this.question = question; 
@@ -62,7 +70,9 @@ public class Poll {
 
     // Helpers
     public VoteOption addVoteOption(String caption) {
-        VoteOption voteOption = new VoteOption(this, caption, voteOptions.size());
+        VoteOption voteOption = new VoteOption();
+        voteOption.setCaption(caption);
+        voteOption.setPoll(this);
         voteOptions.add(voteOption);
         return voteOption;
     }
@@ -81,4 +91,9 @@ public class Poll {
         votes.remove(vote);
         vote.setPoll(null);
     }
+
+    @JsonProperty("aPublic")
+    public boolean isAPublic() { return aPublic; }
+    @JsonProperty("aPublic")
+    public void setAPublic(boolean aPublic) { this.aPublic = aPublic; }
 }

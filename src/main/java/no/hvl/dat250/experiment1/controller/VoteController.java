@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 @CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173" })
 @RequiredArgsConstructor
 public class VoteController {
-    private PollManager pollManager;
+    private final PollManager pollManager;
 
     @PostMapping
     public Vote cast(@RequestBody CastVote req) {

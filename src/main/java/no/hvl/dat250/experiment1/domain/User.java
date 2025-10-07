@@ -1,7 +1,7 @@
 package no.hvl.dat250.experiment1.domain;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -15,14 +15,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer","handler"})
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,12 +33,14 @@ public class User {
     // One user can create many polls
     @OneToMany(mappedBy = "creator", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private Set<Poll> createdPolls = new HashSet<>();
+    @JsonIgnore
+    private List<Poll> createdPolls = new ArrayList<>();
 
     // One user can cast many votes
     @OneToMany(mappedBy = "voter", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private Set<Vote> votes = new HashSet<>();
+    @JsonIgnore
+    private List<Vote> votes = new ArrayList<>();
 
     public User(String username, String email) {
         this.username = username;

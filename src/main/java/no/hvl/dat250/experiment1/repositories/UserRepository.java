@@ -10,5 +10,4 @@ import no.hvl.dat250.experiment1.domain.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>{
     Optional<User> findByUsername(String username);
-    
 }

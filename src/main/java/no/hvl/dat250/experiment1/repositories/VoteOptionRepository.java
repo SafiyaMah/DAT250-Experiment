@@ -10,5 +10,4 @@ import no.hvl.dat250.experiment1.domain.VoteOption;
 @Repository
 public interface VoteOptionRepository extends JpaRepository<VoteOption, Long> {
     List<VoteOption> findByPollId(Long pollId);
-    
 }

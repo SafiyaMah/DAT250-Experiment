@@ -21,6 +21,11 @@ public class UserController {
     public User create(@RequestBody CreateUser req){
         return pollManager.createUser(req.username(), req.email());
     }
+
+    @GetMapping(params = "username")
+    public User byUsername(@RequestParam String username) {
+        return pollManager.getUserByUsername(username);
+    }
     
     @GetMapping
     public List<User> all(){
