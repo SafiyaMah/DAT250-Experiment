@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,7 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
+@Table(name = "users") 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
     @Id
@@ -67,4 +69,22 @@ public class User {
         votes.remove(vote);
         vote.setVoter(null);
     }
+
+    // Helpers for testing
+    public Poll createPoll(String question) {
+    // validuntil is null for the test 
+    Poll p = new Poll(question, null, this, true);
+    this.addCreatedPoll(p); // keep both sides in sync
+    p.setCreator(this);
+    return p;
+}
+
+public Vote voteFor(VoteOption option) {
+    Poll poll = option.getPoll();
+    Vote v = new Vote(this, poll, option);
+    this.addVote(v);
+    poll.addVote(v);
+    option.addVote(v);
+    return v;
+}
 }

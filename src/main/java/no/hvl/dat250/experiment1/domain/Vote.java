@@ -21,7 +21,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(uniqueConstraints = @UniqueConstraint(name = "uk_vote_poll_voter",columnNames = {"poll_id", "voter_id"}))
+@Table(name = "votes", uniqueConstraints = @UniqueConstraint(name = "uk_vote_poll_voter",columnNames = {"poll_id", "voter_id"}))
 public class Vote {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.ToString;
 import lombok.Getter;
@@ -29,6 +30,7 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
+@Table(name = "polls")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Poll {
     @Id
@@ -51,7 +53,7 @@ public class Poll {
     // One poll can have many vote options
     @JsonManagedReference
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("id ASC")  
+    @OrderBy("presentationOrder ASC")  
     @ToString.Exclude
     private List<VoteOption> voteOptions = new ArrayList<>();
     
@@ -73,6 +75,7 @@ public class Poll {
         VoteOption voteOption = new VoteOption();
         voteOption.setCaption(caption);
         voteOption.setPoll(this);
+        voteOption.setPresentationOrder(this.getVoteOptions().size());
         voteOptions.add(voteOption);
         return voteOption;
     }

@@ -15,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,6 +26,7 @@ import lombok.ToString;
 @Entity
 @Getter
 @Setter
+@Table(name = "vote_options")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class VoteOption {
     @Id

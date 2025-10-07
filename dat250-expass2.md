@@ -32,3 +32,11 @@ At first I ran into issues when testing with Bruno, because I didn’t know exac
 
 ## Conclusion
 I managed to implement a working REST API for polls, users, vote options, and votes, with endpoints tested in Bruno. Despite some initial errors, I got all main functionality working: creating users, polls, options, casting votes, and retrieving counts.
+
+# DAT250: Software Technology Experiment Assignment 3/4
+For assignment 3 I built a Spring Boot REST API for a poll app with four JPA entities (User, Poll, VoteOption, Vote) and controllers for users, polls, options, and votes. I wired everything through a PollManager service plus Spring Data repositories, enabled CORS for the Svelte client, and added endpoints to create users and polls, add options, list polls, fetch a poll by id, cast a vote, and return per-option results. I also enforced “one vote per user per poll” and supported public/private polls; the list endpoint returns all polls, and the UI filters so everyone sees public polls while a logged-in creator also sees their private ones. On the frontend I fixed session persistence and I corrected JSON casing so the boolean aPublic is serialized consistently.
+
+For assignment 4 I created a PollsTest and ran the test with Gradle and confirmed it’s green. Along the way I fixed a few issues. After those fixes both the API and the test behave as expected.
+
+
+# DAT250: Software Technology Experiment Assignment 5
