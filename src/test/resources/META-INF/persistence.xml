@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            version="3.1"
+            xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd">
+
+<persistence-unit name="pollsPU" transaction-type="RESOURCE_LOCAL">
+    <class>no.hvl.dat250.experiment1.domain.User</class>
+    <class>no.hvl.dat250.experiment1.domain.Poll</class>
+    <class>no.hvl.dat250.experiment1.domain.VoteOption</class>
+    <class>no.hvl.dat250.experiment1.domain.Vote</class>
+
+    <properties>
+    <property name="jakarta.persistence.jdbc.driver" value="org.h2.Driver"/>
+    <property name="jakarta.persistence.jdbc.url" value="jdbc:h2:mem:polls;DB_CLOSE_DELAY=-1"/>
+    <property name="jakarta.persistence.jdbc.user" value="sa"/>
+    <property name="jakarta.persistence.jdbc.password" value=""/>
+
+    <!-- Hibernate provider -->
+    <property name="jakarta.persistence.provider" value="org.hibernate.jpa.HibernatePersistenceProvider"/>
+    <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+
+    <!-- Auto create schema for the test -->
+    <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>
+    <property name="hibernate.show_sql" value="false"/>
+    <property name="hibernate.format_sql" value="true"/>
+    </properties>
+</persistence-unit>
+</persistence>
