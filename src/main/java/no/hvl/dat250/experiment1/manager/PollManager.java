@@ -26,6 +26,11 @@ public class PollManager {
     private final UserRepository users;
     private final VoteOptionRepository options;
     private final VoteRepository votes;
+    private final no.hvl.dat250.experiment1.infra.RedisCache redis;
+
+    private static String countsKey(long pollId) {
+        return "poll:" + pollId + ":counts";
+    }
 
     @Transactional
     public User createUser(String username, String email){
@@ -80,6 +85,9 @@ public class PollManager {
         Poll poll = getPoll(pollId);
         VoteOption option = poll.addVoteOption(caption);
         polls.save(poll);
+        
+        // new option means previous counts are incomplete so we nuke cache
+        redis.del(countsKey(pollId));
         return option;
     }
 
@@ -88,14 +96,20 @@ public class PollManager {
         Poll poll = getPoll(pollId);
         VoteOption option = options.findById(optionId).orElseThrow(() -> notFound("Option", optionId));
         User voter = users.findById(voterId).orElseThrow(() -> notFound("User", voterId));
+        
         if (!option.getPoll().getId().equals(poll.getId())){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Option does not belong to poll");
         }
         if (votes.existsByPoll_IdAndVoter_Id(pollId, voterId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "You already voted on this poll");
         }
-        Vote vote = new Vote(voter, poll, option);
-        return votes.save(vote);
+        
+        //Vote vote = new Vote(voter, poll, option);
+        Vote saved = votes.save(new Vote(voter, poll, option));
+
+        redis.hincrBy(countsKey(pollId), String.valueOf(optionId), 1L);
+        
+        return saved;
     }
 
     public List<Vote> listVotesForPoll(Long pollId){
@@ -108,7 +122,30 @@ public class PollManager {
 
     public List<ResultDto> results(Long pollId){
         Poll poll = getPoll(pollId);
-        return poll.getVoteOptions().stream().map(o -> new ResultDto(o.getId(), o.getCaption(), votes.countByVoteOptionId(o.getId()))).toList();
+
+        String key = countsKey(pollId);
+        var cached = redis.hgetAll(key);
+
+        if (cached != null && !cached.isEmpty()) {
+            // build from cache + voteoption already ordered
+            return poll.getVoteOptions().stream().map(opt -> {
+                long c = 0L; 
+                String v = cached.get(String.valueOf(opt.getId()));
+                if (v != null) try { c = Long.parseLong(v); } catch (NumberFormatException ignored) {}
+                return new ResultDto(opt.getId(), opt.getCaption(), c);
+            }).toList();
+        }
+
+        var map = new java.util.LinkedHashMap<String, String>();
+        var result = poll.getVoteOptions().stream().map(opt -> {
+            long count = votes.countByVoteOptionId(opt.getId());
+            map.put(String.valueOf(opt.getId()), String.valueOf(count));
+            return new ResultDto(opt.getId(), opt.getCaption(), count);
+        }).toList();
+
+        // write to cache
+        redis.hsetAndExpire(key, map);
+        return result;
     }
 
     private static ResponseStatusException notFound(String what, Object id){
