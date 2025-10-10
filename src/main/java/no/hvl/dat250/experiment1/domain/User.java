@@ -79,12 +79,12 @@ public class User {
     return p;
 }
 
-public Vote voteFor(VoteOption option) {
-    Poll poll = option.getPoll();
-    Vote v = new Vote(this, poll, option);
-    this.addVote(v);
-    poll.addVote(v);
-    option.addVote(v);
-    return v;
-}
+    public Vote voteFor(VoteOption option) {
+        Poll poll = option.getPoll();
+        Vote v = new Vote(this, poll, option);
+        this.addVote(v);
+        poll.addVote(v);
+        option.addVote(v);
+        return v;
+    }
 }
