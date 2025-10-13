@@ -19,6 +19,10 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDate;
 import java.util.List;
 
+import no.hvl.dat250.experiment1.infra.PollEvent;
+import  no.hvl.dat250.experiment1.infra.RedisCache;
+import no.hvl.dat250.experiment1.infra.RedisPubSubService;
+
 @Service
 @RequiredArgsConstructor
 public class PollManager {
@@ -26,7 +30,8 @@ public class PollManager {
     private final UserRepository users;
     private final VoteOptionRepository options;
     private final VoteRepository votes;
-    private final no.hvl.dat250.experiment1.infra.RedisCache redis;
+    private final RedisCache redis;
+    private final RedisPubSubService pubsub;
 
     private static String countsKey(long pollId) {
         return "poll:" + pollId + ":counts";
@@ -61,9 +66,16 @@ public class PollManager {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Provide at least two options");
         }
         User creator = users.findById(creatorId).orElseThrow(() -> notFound("User", creatorId));
+        // build new entity
         Poll createNewPoll = new Poll(question, validUntil, creator, aPublic);
-        opts.forEach(createNewPoll::addVoteOption);       
-        return polls.save(createNewPoll);                           
+        opts.forEach(createNewPoll::addVoteOption);
+        // save it
+        Poll created = polls.save(createNewPoll);
+        // clear/init cache enrtry fo his poll
+        redis.del(countsKey(created.getId()));
+        // publish a poll-created event on redis pub/sub
+        pubsub.publish(RedisPubSubService.channelFor(created.getId()), new PollEvent("poll-created", created.getId(), null, null));
+        return created;                          
     }
 
     public List<Poll> listPolls(){
@@ -108,6 +120,8 @@ public class PollManager {
         Vote saved = votes.save(new Vote(voter, poll, option));
 
         redis.hincrBy(countsKey(pollId), String.valueOf(optionId), 1L);
+
+        pubsub.publish(RedisPubSubService.channelFor(pollId), new PollEvent("vote", pollId, optionId, voterId));
         
         return saved;
     }

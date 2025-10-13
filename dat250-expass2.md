@@ -41,3 +41,6 @@ For assignment 4 I created a PollsTest and ran the test with Gradle and confirme
 
 # DAT250: Software Technology Experiment Assignment 5
 For assignment 5 I integrated Redis (via Docker) as a cache layer for my Spring Boot poll app. I added a small Jedis-based helper and used it to cache the “votes per option” for each poll under a key like poll:{id}:counts with a short TTL. When results are requested, the app first checks Redis and serves from cache if present, otherwise it aggregates from MySQL, returns the data, and writes it into Redis. On every new vote I increment the cached counter, and when options change I invalidate the cache entry. This demonstrates using a NoSQL store as a fast, denormalized cache alongside the relational database, improving read performance while keeping data consistent.
+
+# DAT250: Software Technology Experiment Assignment 6
+I integrated Redis Pub/Sub as the message broker because I already run Redis for Assignment 5. For each poll I use a channel named poll:{id}. When a poll is created, the app publishes a poll-created event. I added a background subscriber that uses PSUBSCRIBE poll:*; when it receives a {"type":"vote","pollId":...,"optionId":...,"voterId":...} message, it calls the existing PollManager.castVote(...), which persists to MySQL and refreshes the Redis vote-count cache.
