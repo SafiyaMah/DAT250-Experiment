@@ -1,7 +1,6 @@
 # DAT250 Poll System – Backend (Spring Boot) + Dockerized MySQL + Test Profile
 
-A backend for a simple **polling/voting system** (Users → Polls → Options → Votes) built with **Spring Boot 3**, **Spring Data JPA**, **MySQL** (for local/dev), and **H2** (for tests/CI).  
-A SPA frontend (Svelte/Vite or similar) will be added next and can be served by Spring Boot or run separately during development.
+A backend for a simple **polling/voting system** (Users → Polls → Options → Votes) built with **Spring Boot 3**, **Spring Data JPA**, **MySQL** (for local/dev), and **H2** (for tests/CI). With an SPA frontend (Svelte/Vite).
 
 ---
 
