@@ -23,8 +23,8 @@ import java.util.Optional;
 import java.util.Map;
 
 import no.hvl.dat250.experiment1.infra.PollEvent;
-import  no.hvl.dat250.experiment1.infra.RedisCache;
-import no.hvl.dat250.experiment1.infra.RedisPubSubService;
+import no.hvl.dat250.experiment1.infra.RedisCache;
+import no.hvl.dat250.experiment1.infra.RedisPublisher;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +34,11 @@ public class PollManager {
     private final VoteOptionRepository options;
     private final VoteRepository votes;
     private final Optional<RedisCache> redis;
-    private final Optional<RedisPubSubService> pubsub;
+    private final Optional<RedisPublisher> publisher;
+
+    private void publish(String channel, PollEvent ev) {
+        publisher.ifPresent(p -> p.publish(channel, ev));
+    }
 
     private static String countsKey(long pollId) {
         return "poll:" + pollId + ":counts";
@@ -78,9 +82,9 @@ public class PollManager {
         redis.ifPresent(r -> r.del(countsKey(created.getId())));
         // publish a poll-created event on redis pub/sub
         // per poll channel
-        pubsub.ifPresent(svc -> svc.publish(RedisPubSubService.channelFor(created.getId()), new PollEvent("poll-created", created.getId(), null, null)));
+        publish(RedisPublisher.channelFor(created.getId()), new PollEvent("poll-created", created.getId(), null, null));
         // for new creation poll channel
-        pubsub.ifPresent(svc -> svc.publish("polls:new", new PollEvent("poll-created", created.getId(), null, null)));
+        publish("polls:new", new PollEvent("poll-created", created.getId(), null, null));
         return created;                          
     }
 
@@ -99,7 +103,7 @@ public class PollManager {
 
         // drop cache and announce deletion
         redis.ifPresent(r -> r.del(countsKey(pollId)));
-        pubsub.ifPresent(svc -> svc.publish(RedisPubSubService.channelFor(pollId), new PollEvent("poll-deleted", pollId, null, null)));
+        publish(RedisPublisher.channelFor(pollId), new PollEvent("poll-deleted", pollId, null, null));
     }
 
     @Transactional
@@ -112,7 +116,7 @@ public class PollManager {
         redis.ifPresent(r -> r.del(countsKey(pollId)));
 
         // announce option added
-        pubsub.ifPresent(svc -> svc.publish(RedisPubSubService.channelFor(pollId), new PollEvent("option-added", pollId, option.getId(), null)));
+        publish(RedisPublisher.channelFor(pollId), new PollEvent("option-added", pollId, option.getId(), null));
 
         return option;
     }
@@ -137,7 +141,7 @@ public class PollManager {
         redis.ifPresent(r -> r.hincrBy(countsKey(pollId), String.valueOf(optionId), 1L));
 
         // publish vote event
-        pubsub.ifPresent(svc -> svc.publish(RedisPubSubService.channelFor(pollId), new PollEvent("vote", pollId, optionId, voterId)));
+        publish(RedisPublisher.channelFor(pollId), new PollEvent("vote", pollId, optionId, voterId));
 
         return saved;
     }
