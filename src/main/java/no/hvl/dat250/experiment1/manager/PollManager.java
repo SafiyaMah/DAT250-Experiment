@@ -17,7 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
+import java.util.Map;
 
 import no.hvl.dat250.experiment1.infra.PollEvent;
 import  no.hvl.dat250.experiment1.infra.RedisCache;
@@ -30,8 +33,8 @@ public class PollManager {
     private final UserRepository users;
     private final VoteOptionRepository options;
     private final VoteRepository votes;
-    private final RedisCache redis;
-    private final RedisPubSubService pubsub;
+    private final Optional<RedisCache> redis;
+    private final Optional<RedisPubSubService> pubsub;
 
     private static String countsKey(long pollId) {
         return "poll:" + pollId + ":counts";
@@ -72,9 +75,12 @@ public class PollManager {
         // save it
         Poll created = polls.save(createNewPoll);
         // clear/init cache enrtry fo his poll
-        redis.del(countsKey(created.getId()));
+        redis.ifPresent(r -> r.del(countsKey(created.getId())));
         // publish a poll-created event on redis pub/sub
-        pubsub.publish(RedisPubSubService.channelFor(created.getId()), new PollEvent("poll-created", created.getId(), null, null));
+        // per poll channel
+        pubsub.ifPresent(svc -> svc.publish(RedisPubSubService.channelFor(created.getId()), new PollEvent("poll-created", created.getId(), null, null)));
+        // for new creation poll channel
+        pubsub.ifPresent(svc -> svc.publish("polls:new", new PollEvent("poll-created", created.getId(), null, null)));
         return created;                          
     }
 
@@ -90,6 +96,10 @@ public class PollManager {
     public void deletePoll(Long pollId){
         if (!polls.existsById(pollId)) throw notFound("Poll", pollId);
         polls.deleteById(pollId);
+
+        // drop cache and announce deletion
+        redis.ifPresent(r -> r.del(countsKey(pollId)));
+        pubsub.ifPresent(svc -> svc.publish(RedisPubSubService.channelFor(pollId), new PollEvent("poll-deleted", pollId, null, null)));
     }
 
     @Transactional
@@ -99,7 +109,11 @@ public class PollManager {
         polls.save(poll);
         
         // new option means previous counts are incomplete so we nuke cache
-        redis.del(countsKey(pollId));
+        redis.ifPresent(r -> r.del(countsKey(pollId)));
+
+        // announce option added
+        pubsub.ifPresent(svc -> svc.publish(RedisPubSubService.channelFor(pollId), new PollEvent("option-added", pollId, option.getId(), null)));
+
         return option;
     }
 
@@ -119,10 +133,12 @@ public class PollManager {
         //Vote vote = new Vote(voter, poll, option);
         Vote saved = votes.save(new Vote(voter, poll, option));
 
-        redis.hincrBy(countsKey(pollId), String.valueOf(optionId), 1L);
+        // increment cached count, if cache present
+        redis.ifPresent(r -> r.hincrBy(countsKey(pollId), String.valueOf(optionId), 1L));
 
-        pubsub.publish(RedisPubSubService.channelFor(pollId), new PollEvent("vote", pollId, optionId, voterId));
-        
+        // publish vote event
+        pubsub.ifPresent(svc -> svc.publish(RedisPubSubService.channelFor(pollId), new PollEvent("vote", pollId, optionId, voterId)));
+
         return saved;
     }
 
@@ -138,27 +154,30 @@ public class PollManager {
         Poll poll = getPoll(pollId);
 
         String key = countsKey(pollId);
-        var cached = redis.hgetAll(key);
+        // read cache safely via optional redisache
+        Map<String, String> cached = redis.map(r -> r.hgetAll(key)).orElseGet(Map::of);
 
-        if (cached != null && !cached.isEmpty()) {
+        if (!cached.isEmpty()) {
             // build from cache + voteoption already ordered
             return poll.getVoteOptions().stream().map(opt -> {
                 long c = 0L; 
                 String v = cached.get(String.valueOf(opt.getId()));
-                if (v != null) try { c = Long.parseLong(v); } catch (NumberFormatException ignored) {}
+                if (v != null) {
+                    try { c = Long.parseLong(v); } catch (NumberFormatException ignored) {}
+                }
                 return new ResultDto(opt.getId(), opt.getCaption(), c);
             }).toList();
         }
 
-        var map = new java.util.LinkedHashMap<String, String>();
-        var result = poll.getVoteOptions().stream().map(opt -> {
+        Map<String, String> map = new LinkedHashMap<>();
+        List<ResultDto> result = poll.getVoteOptions().stream().map(opt -> {
             long count = votes.countByVoteOptionId(opt.getId());
             map.put(String.valueOf(opt.getId()), String.valueOf(count));
             return new ResultDto(opt.getId(), opt.getCaption(), count);
         }).toList();
 
         // write to cache
-        redis.hsetAndExpire(key, map);
+        redis.ifPresent(r -> r.hsetAndExpire(key, map));
         return result;
     }
 

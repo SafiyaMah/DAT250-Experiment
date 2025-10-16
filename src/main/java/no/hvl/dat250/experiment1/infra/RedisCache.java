@@ -1,12 +1,14 @@
 package no.hvl.dat250.experiment1.infra;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.UnifiedJedis;
 
 import java.util.Map;
 
 @Component
+@ConditionalOnProperty(name = "redis.enabled", havingValue = "true", matchIfMissing = true)
 public class RedisCache implements AutoCloseable {
     private final UnifiedJedis jedis;
     private final int ttlSeconds;

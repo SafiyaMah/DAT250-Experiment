@@ -6,6 +6,7 @@ import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import no.hvl.dat250.experiment1.manager.PollManager;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.JedisPooled;
@@ -13,8 +14,9 @@ import redis.clients.jedis.JedisPubSub;
 
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "redis.enabled", havingValue = "true", matchIfMissing = true)
 public class RedisPubSubService {
-    private final PollManager pollManager;     // to call castVote(...)
+    private final PollManager pollManager; // to call castVote(...)
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Value("${redis.url:redis://localhost:6379}")
