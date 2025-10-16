@@ -44,3 +44,6 @@ For assignment 5 I integrated Redis (via Docker) as a cache layer for my Spring 
 
 # DAT250: Software Technology Experiment Assignment 6
 I integrated Redis Pub/Sub as the message broker because I already run Redis for Assignment 5. For each poll I use a channel named poll:{id}. When a poll is created, the app publishes a poll-created event. I added a background subscriber that uses PSUBSCRIBE poll:*; when it receives a {"type":"vote","pollId":...,"optionId":...,"voterId":...} message, it calls the existing PollManager.castVote(...), which persists to MySQL and refreshes the Redis vote-count cache.
+
+# DAT250: Software Technology Experiment Assignment 7
+I containerized the PollApp ahead of time using Docker

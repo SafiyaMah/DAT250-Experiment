@@ -1,4 +1,4 @@
-# DAT250 Poll System – Backend (Spring Boot) + Dockerized MySQL + Test Profile
+# DAT250 Software Technology Experiemnt - Poll System
 
 A backend for a simple **polling/voting system** (Users → Polls → Options → Votes) built with **Spring Boot 3**, **Spring Data JPA**, **MySQL** (for local/dev), and **H2** (for tests/CI). With an SPA frontend (Svelte/Vite).
 
@@ -9,6 +9,8 @@ A backend for a simple **polling/voting system** (Users → Polls → Options �
 - Create **Users**, **Polls**, **Options**, and **Votes**
 - REST API with JSON
 - Persistence via JPA (MySQL for dev, H2 for tests/CI)
+- Redis cache for poll result counts
+- Redis pub/sub events per poll (poll:<pollId>) for poll-created, vote, etc.
 - Docker Compose spins up **MySQL** + the **Spring Boot app**
 - Clean separation of **Controller → Service/Manager → Repository → Entities**
 - CORS friendly for local SPA development
@@ -21,8 +23,10 @@ A backend for a simple **polling/voting system** (Users → Polls → Options �
 - **Spring Web**, **Spring Data JPA**
 - **MySQL 8** (local/dev) via Docker or host DB
 - **H2** (in-memory for tests/CI)
+- **Redis** (via Docker) for caching and messaging
 - **Lombok** for boilerplate
 - SPA frontend: **Svelte/Vite** 
+- **Docker Compose** for one.command local stack **(app + DB + Redis)**
 
 ---
 
@@ -102,6 +106,17 @@ POST   /api/polls/{pollId}/votes  # Cast vote (voterId, optionId)
 GET    /api/polls/{pollId}/votes  # List votes (optional)
 
 
+Redis Cheat-Sheet:
+docker exec -it redis redis-cli
+
+Check cached results:
+> KEYS poll:*:counts
+> HGETALL poll:<pollId>:counts
+> TTL poll:<pollId>:counts
+Watch pub/sub events:
+> PSUBSCRIBE poll:*
+Then create a poll / cast a vote
+
 
 Curl commands for test:
 
@@ -135,6 +150,7 @@ backend/src/main/resources/static
 
 
 Useful common commands:
+
 # build & run backend (host DB)
 ./gradlew bootRun
 
@@ -144,8 +160,8 @@ Useful common commands:
 # run tests (H2)
 ./gradlew test
 
-# docker up (MySQL + app). Any code changes, restart/rebuild
-./gradlew bootJar or gradlew build
+# docker up (MySQL + Redis + app). Any code changes, rebuild
+./gradlew bootJar
 docker compose up -d --build
 
 # docker down
@@ -156,20 +172,19 @@ docker compose build --no-cache
 
 # tail logs
 docker compose logs -f
+docker compose logs -f app
+docker compose logs -f mysql
+docker compose logs -f redis
 
 # docker restart
-docker compose restart app 
-docker compose restart // both
+docker compose restart app
+docker compose restart
 
-# docker reset the DB
-docker compose down -v     # removes the mysql volume
+# reset the DB (drops volume)
+docker compose down -v
 
-# other useful docker commands
-docker compose ps              # status
-docker compose logs -f app     # app logs
-docker compose logs -f mysql   # db logs
-docker compose down            # stop
-docker compose down -v         # stop + wipe DB volume (resets data)
+# status
+docker compose ps
 
 # quick API check
 curl http://localhost:8080/api/polls
